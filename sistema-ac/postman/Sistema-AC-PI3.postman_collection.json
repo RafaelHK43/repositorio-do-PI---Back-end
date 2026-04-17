@@ -1,0 +1,279 @@
+{
+  "info": {
+    "_postman_id": "8a521688-88d8-45a4-9d67-c63bd6ca5f32",
+    "name": "Sistema AC - PI3",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Fluxo de teste do Sistema AC: cadastro de curso/regra e submissao com validacao de limite de horas por area."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "cursoId",
+      "value": "1"
+    }
+  ],
+  "item": [
+    {
+      "name": "1 - Cadastrar Curso (Coordenador)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "coordenador@senac.br",
+              "type": "string"
+            },
+            {
+              "key": "password",
+              "value": "123456",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nome\": \"Analise e Desenvolvimento de Sistemas\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/cursos",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "cursos"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 201 ou 400 (curso ja existente)', function () {",
+              "  pm.expect([201, 400]).to.include(pm.response.code);",
+              "});",
+              "",
+              "if (pm.response.code === 201) {",
+              "  pm.test('Retorno contem id de curso', function () {",
+              "    const body = pm.response.json();",
+              "    pm.expect(body).to.have.property('id');",
+              "    pm.collectionVariables.set('cursoId', String(body.id));",
+              "  });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2 - Cadastrar Regra 20h Pesquisa (Coordenador)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "coordenador@senac.br",
+              "type": "string"
+            },
+            {
+              "key": "password",
+              "value": "123456",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"cursoId\": {{cursoId}},\n  \"area\": \"PESQUISA\",\n  \"limiteHoras\": 20\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/regras",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "regras"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 201 para regra', function () {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test('Retorno da regra contem limiteHoras=20', function () {",
+              "  const body = pm.response.json();",
+              "  pm.expect(Number(body.limiteHoras)).to.equal(20);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3 - Submissao dentro do limite (Aluno)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "aluno@senac.br",
+              "type": "string"
+            },
+            {
+              "key": "password",
+              "value": "123456",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "dados",
+              "value": "{\n  \"alunoId\": 3,\n  \"cursoId\": {{cursoId}},\n  \"titulo\": \"Monitoria PI3\",\n  \"descricao\": \"Atividade valida dentro do limite\",\n  \"area\": \"PESQUISA\",\n  \"horasDeclaradas\": 12,\n  \"dataAtividade\": \"2026-04-16\"\n}",
+              "type": "text",
+              "contentType": "application/json"
+            },
+            {
+              "key": "arquivo",
+              "type": "file",
+              "src": ""
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/submissoes",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "submissoes"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 201 para submissao valida', function () {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test('Metadados de arquivo retornam preenchidos', function () {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body).to.have.property('nomeArquivoComprovante');",
+              "  pm.expect(body).to.have.property('tipoArquivoComprovante');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4 - Submissao acima do limite (Aluno)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "aluno@senac.br",
+              "type": "string"
+            },
+            {
+              "key": "password",
+              "value": "123456",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "dados",
+              "value": "{\n  \"alunoId\": 3,\n  \"cursoId\": {{cursoId}},\n  \"titulo\": \"Pesquisa Extra\",\n  \"descricao\": \"Tentativa acima do limite\",\n  \"area\": \"PESQUISA\",\n  \"horasDeclaradas\": 10,\n  \"dataAtividade\": \"2026-04-16\"\n}",
+              "type": "text",
+              "contentType": "application/json"
+            },
+            {
+              "key": "arquivo",
+              "type": "file",
+              "src": ""
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/submissoes",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "submissoes"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 400 ou 403 para excesso de horas/seguranca', function () {",
+              "  pm.expect([400, 403]).to.include(pm.response.code);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    }
+  ]
+}
