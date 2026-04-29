@@ -38,4 +38,16 @@ public class FileStorageService {
             throw new IllegalStateException("Falha ao salvar arquivo do comprovante", ex);
         }
     }
+
+    public void removerArquivo(String caminhoArquivo) {
+        if (caminhoArquivo == null || caminhoArquivo.isBlank()) {
+            return;
+        }
+
+        try {
+            Files.deleteIfExists(Paths.get(caminhoArquivo));
+        } catch (IOException ex) {
+            throw new IllegalStateException("Falha ao remover arquivo do comprovante", ex);
+        }
+    }
 }

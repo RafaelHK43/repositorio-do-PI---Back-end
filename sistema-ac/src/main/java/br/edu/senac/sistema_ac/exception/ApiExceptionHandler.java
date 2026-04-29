@@ -39,4 +39,13 @@ public class ApiExceptionHandler {
         body.put("erro", ex.getMessage());
         return ResponseEntity.badRequest().body(body);
     }
+
+    @ExceptionHandler(RecursoNaoEncontradoException.class)
+    public ResponseEntity<Map<String, Object>> handleNotFound(RecursoNaoEncontradoException ex) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("status", HttpStatus.NOT_FOUND.value());
+        body.put("erro", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
+    }
 }
