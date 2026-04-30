@@ -4,6 +4,7 @@ import br.edu.senac.sistema_ac.domain.entity.AtividadeComplementar;
 import br.edu.senac.sistema_ac.domain.entity.Curso;
 import br.edu.senac.sistema_ac.domain.entity.Submissao;
 import br.edu.senac.sistema_ac.domain.entity.Usuario;
+import br.edu.senac.sistema_ac.domain.enums.AreaAtividade;
 import br.edu.senac.sistema_ac.domain.enums.StatusSubmissao;
 import br.edu.senac.sistema_ac.domain.enums.TipoArquivoComprovante;
 import br.edu.senac.sistema_ac.dto.SubmissaoRequest;
@@ -31,10 +32,11 @@ public class SubmissaoService {
     private final FileStorageService fileStorageService;
     private final OcrService ocrService;
     private final EmailService emailService;
+    private final LogService logService;
 
     @Transactional
     public Submissao criar(SubmissaoRequest request, MultipartFile arquivo) {
-        Usuario aluno = usuarioRepository.findById(request.alunoId())
+        Usuario aluno = usuarioRepository.findById(request.studentId())
             .orElseThrow(() -> new IllegalArgumentException("Aluno nao encontrado"));
         Curso curso = cursoService.buscarPorId(request.cursoId());
 
@@ -42,20 +44,35 @@ public class SubmissaoService {
             throw new IllegalArgumentException("Arquivo do comprovante e obrigatorio");
         }
 
+        AreaAtividade areaEnum;
+        if (request.areaId() instanceof String) {
+            String areaStr = (String) request.areaId();
+            if (areaStr.matches("\\d+")) {
+                areaEnum = AreaAtividade.values()[Integer.parseInt(areaStr) - 1]; // Assume id 1-based, ou ajuste se for 0-based
+            } else {
+                areaEnum = AreaAtividade.valueOf(areaStr.toUpperCase());
+            }
+        } else if (request.areaId() instanceof Number) {
+            int id = ((Number) request.areaId()).intValue();
+            areaEnum = AreaAtividade.values()[id - 1];
+        } else {
+            throw new IllegalArgumentException("Formato de areaId invalido");
+        }
+
         validacaoHorasService.validarLimiteHorasPorArea(
             aluno.getId(),
             curso.getId(),
-            request.area(),
-            request.horasDeclaradas()
+            areaEnum,
+            request.workload()
         );
 
         AtividadeComplementar atividade = AtividadeComplementar.builder()
             .aluno(aluno)
             .curso(curso)
-            .titulo(request.titulo())
+            .titulo(request.title())
             .descricao(request.descricao())
-            .area(request.area())
-            .horasDeclaradas(request.horasDeclaradas())
+            .area(areaEnum)
+            .horasDeclaradas(request.workload())
             .dataAtividade(request.dataAtividade())
             .build();
 
@@ -74,12 +91,49 @@ public class SubmissaoService {
             .observacaoCoordenacao(resultadoOcr)
             .build();
 
-        return submissaoRepository.save(submissao);
+        Submissao salvo = submissaoRepository.save(submissao);
+        
+        // Enviar email para coordenadores
+        try {
+            Long countCoords = usuarioRepository.countByPerfil(br.edu.senac.sistema_ac.domain.enums.PerfilUsuario.COORDENADOR);
+            if (countCoords > 0) {
+                // Simplificação: notifica coordenador genérico ou lista de coordenadores
+                // Aqui pegamos o primeiro coordenador como exemplo (ajuste conforme regra de negócio)
+                // Idealmente buscaríamos "findByPerfil", para este código vamos enviar para todos com perfil COORDENADOR
+                List<Usuario> coords = usuarioRepository.findAll().stream()
+                    .filter(u -> u.getPerfil() == br.edu.senac.sistema_ac.domain.enums.PerfilUsuario.COORDENADOR)
+                    .toList();
+                    
+                for (Usuario coord : coords) {
+                    String assunto = "Nova submissão recebida!";
+                    String msg = String.format("O aluno %s submeteu uma nova atividade (%s). Acesse o painel para avaliar.", 
+                        aluno.getNome(), request.title());
+                    emailService.enviarEmail(coord.getEmail(), assunto, msg);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Aviso: Falha ao enviar email para coordenação: " + e.getMessage());
+        }
+
+        return salvo;
     }
 
     @Transactional(readOnly = true)
     public List<Submissao> listarTodas() {
-        return submissaoRepository.findAllByOrderByDataSubmissaoDesc();
+        String emailLogado = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
+        Usuario usuarioLogado = usuarioRepository.findByEmail(emailLogado)
+            .orElseThrow(() -> new IllegalArgumentException("Usuário logado não encontrado"));
+
+        if (usuarioLogado.getPerfil() == br.edu.senac.sistema_ac.domain.enums.PerfilUsuario.SUPER_ADMIN) {
+            return submissaoRepository.findAllByOrderByDataSubmissaoDesc();
+        } else if (usuarioLogado.getPerfil() == br.edu.senac.sistema_ac.domain.enums.PerfilUsuario.COORDENADOR) {
+            List<Long> cursoIds = usuarioLogado.getCursos().stream().map(Curso::getId).toList();
+            if (cursoIds.isEmpty()) return List.of();
+            return submissaoRepository.findAllByAtividadeComplementarCursoIdInOrderByDataSubmissaoDesc(cursoIds);
+        } else {
+            // Se for ALUNO, retorna apenas as dele
+            return submissaoRepository.findAllByAlunoIdOrderByDataSubmissaoDesc(usuarioLogado.getId());
+        }
     }
 
     @Transactional(readOnly = true)
@@ -137,12 +191,20 @@ public class SubmissaoService {
                 String mensagem = String.format("Olá %s, suas horas referentes à atividade '%s' do curso '%s' foram aprovadas!",
                     nomeAluno, tituloAtividade, nomeCurso);
                 emailService.enviarEmail(email, assunto, mensagem);
+
+                String logMsg = String.format("Submissão ID %d aprovada. Aluno: %s. Curso: %s", salvo.getId(), nomeAluno, nomeCurso);
+                String emailLogado = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
+                logService.registrarLog(logMsg, emailLogado);
             } else if (salvo.getStatus() == StatusSubmissao.REPROVADA) {
                 String assunto = "SGAC - Horas Complementares Reprovadas";
                 String motivo = request.observacaoCoordenacao() != null ? request.observacaoCoordenacao() : "Motivo nao informado";
                 String mensagem = String.format("Olá %s, infelizmente sua submissão foi reprovada. Motivo: %s",
                     nomeAluno, motivo);
                 emailService.enviarEmail(email, assunto, mensagem);
+
+                String logMsg = String.format("Submissão ID %d reprovada. Aluno: %s. Motivo: %s", salvo.getId(), nomeAluno, motivo);
+                String emailLogado = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
+                logService.registrarLog(logMsg, emailLogado);
             }
         }
 
