@@ -24,8 +24,8 @@ public class UsuarioService {
     private final PasswordEncoder passwordEncoder;
 
     @Transactional(readOnly = true)
-    public List<UsuarioResponseDTO> listarTodos() {
-        return usuarioRepository.findAll()
+    public List<UsuarioResponseDTO> listarTodos(br.edu.senac.sistema_ac.domain.enums.PerfilUsuario perfil, Long cursoId) {
+        return usuarioRepository.findAllByFiltros(perfil, cursoId)
             .stream()
             .map(this::toDto)
             .collect(Collectors.toList());

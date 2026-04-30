@@ -8,23 +8,23 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public record SubmissaoRequest(
-    @NotNull(message = "alunoId e obrigatorio")
-    Long alunoId,
+    @NotNull(message = "studentId e obrigatorio")
+    Long studentId,
 
     @NotNull(message = "cursoId e obrigatorio")
     Long cursoId,
 
-    @NotBlank(message = "titulo e obrigatorio")
-    String titulo,
+    @NotBlank(message = "title e obrigatorio")
+    String title,
 
     String descricao,
 
-    @NotNull(message = "area e obrigatoria")
-    AreaAtividade area,
+    @NotNull(message = "areaId e obrigatoria")
+    Object areaId,
 
-    @NotNull(message = "horasDeclaradas e obrigatorio")
-    @DecimalMin(value = "0.1", message = "horasDeclaradas deve ser maior que zero")
-    BigDecimal horasDeclaradas,
+    @NotNull(message = "workload e obrigatorio")
+    @DecimalMin(value = "0.1", message = "workload deve ser maior que zero")
+    BigDecimal workload,
 
     @NotNull(message = "dataAtividade e obrigatoria")
     LocalDate dataAtividade

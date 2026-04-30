@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import org.springframework.web.bind.annotation.RequestParam;
+
 @RestController
 @CrossOrigin(origins = "*")
 @RequestMapping("/api/usuarios")
@@ -27,8 +29,10 @@ public class UsuarioController {
     private final UsuarioService usuarioService;
 
     @GetMapping
-    public ResponseEntity<List<UsuarioResponseDTO>> listar() {
-        return ResponseEntity.ok(usuarioService.listarTodos());
+    public ResponseEntity<List<UsuarioResponseDTO>> listar(
+            @RequestParam(required = false) br.edu.senac.sistema_ac.domain.enums.PerfilUsuario perfil,
+            @RequestParam(required = false) Long cursoId) {
+        return ResponseEntity.ok(usuarioService.listarTodos(perfil, cursoId));
     }
 
     @PostMapping
