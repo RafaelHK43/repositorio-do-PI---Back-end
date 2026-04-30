@@ -60,7 +60,7 @@ public class CursoService {
     public void excluir(Long id) {
         Curso curso = buscarPorId(id);
 
-        if (usuarioRepository.existsByCursoId(id)) {
+        if (usuarioRepository.existsByCursosId(id)) {
             throw new IllegalArgumentException("Nao e possivel excluir o curso porque existem usuarios vinculados");
         }
 

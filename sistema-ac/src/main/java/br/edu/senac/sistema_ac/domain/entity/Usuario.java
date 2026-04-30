@@ -10,6 +10,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -44,7 +46,10 @@ public class Usuario {
     @Column(nullable = false, length = 20)
     private PerfilUsuario perfil;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "curso_id")
-    private Curso curso;
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "usuario_curso",
+        joinColumns = @JoinColumn(name = "usuario_id"),
+        inverseJoinColumns = @JoinColumn(name = "curso_id"))
+    @Builder.Default
+    private java.util.List<Curso> cursos = new java.util.ArrayList<>();
 }

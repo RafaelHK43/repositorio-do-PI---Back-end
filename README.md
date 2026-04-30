@@ -8,22 +8,69 @@ Repositório do back-end do projeto de Atividades Complementares (Sistema AC).
 - Spring Boot 3
 - MySQL
 
+---
+
+## 🛠️ Configuração do Ambiente
+
+O projeto utiliza **variáveis de ambiente** para proteger credenciais sensíveis como senhas do banco de dados e chaves de acesso a serviços externos. O arquivo `.env` fica fora do controle de versão (gitignore).
+
+### Passo 1: Clonar o Repositório
+
+```bash
+git clone https://github.com/seu-usuario/repositorio-do-PI---Back-end.git
+cd repositorio-do-PI---Back-end/sistema-ac
+```
+
+### Passo 2: Criar o Arquivo `.env`
+
+Na raiz da pasta `sistema-ac`, crie um arquivo chamado `.env` copiando o template:
+
+```bash
+cp .env.example .env
+```
+
+### Passo 3: Preenchimento das Credenciais
+
+Abra o arquivo `.env` e preencha com seus valores locais:
+
+```env
+# Credenciais do MySQL local
+DB_PASSWORD=sua_senha_do_mysql
+
+# Senha de Aplicativo do Gmail
+EMAIL_PASSWORD=sua_senha_de_aplicativo_gmail
+```
+
+#### Obtendo a Senha de Aplicativo do Gmail
+
+1. Acesse [Google App Passwords](https://myaccount.google.com/apppasswords)
+2. Selecione "Mail" e "Windows Computer" (ou seu SO)
+3. Clique em "Gerar"
+4. Copie a senha gerada (sem espaços) e cole no `.env`
+
+⚠️ **Importante:** Nunca compartilhe ou versione o arquivo `.env`. Ele está no `.gitignore` por razão de segurança.
+
+---
+
 ## Para Desenvolvedores Back-end
 
 ### Configuração do application.properties
 
-No arquivo `sistema-ac/src/main/resources/application.properties`, configure as credenciais do seu MySQL local:
+O arquivo `sistema-ac/src/main/resources/application.properties` já está configurado para ler as variáveis de ambiente:
 
 ```properties
 spring.datasource.url=jdbc:mysql://localhost:3306/sistema_ac?createDatabaseIfNotExist=true&serverTimezone=UTC
-spring.datasource.username=SEU_USUARIO
-spring.datasource.password=SUA_SENHA
+spring.datasource.username=root
+spring.datasource.password=${DB_PASSWORD}
 ```
+
+**As credenciais são carregadas do arquivo `.env` através da dependência `spring-dotenv`.**
 
 Detalhes importantes:
 
 - A flag `createDatabaseIfNotExist=true` permite criar o banco automaticamente na primeira execução.
 - A URL padrão usa a porta `3306` e o schema `sistema_ac`.
+- A variável `${DB_PASSWORD}` é substituída pelo valor definido no arquivo `.env`.
 
 ### Regras de validação de horas
 

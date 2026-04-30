@@ -43,4 +43,18 @@ public interface SubmissaoRepository extends JpaRepository<Submissao, Long> {
     List<Submissao> findAllByOrderByDataSubmissaoDesc();
 
     List<Submissao> findAllByAlunoIdOrderByDataSubmissaoDesc(Long alunoId);
+
+    long countByStatus(StatusSubmissao status);
+
+    default long countByStatus(String status) {
+        if (status == null) return 0L;
+        return countByStatus(StatusSubmissao.valueOf(status));
+    }
+
+    @Query("""
+        SELECT COALESCE(SUM(COALESCE(s.horasAprovadas, s.atividadeComplementar.horasDeclaradas)), 0)
+        FROM Submissao s
+        WHERE s.status = :status
+        """)
+    BigDecimal somarHorasPorStatus(@Param("status") StatusSubmissao status);
 }

@@ -3,6 +3,7 @@ package br.edu.senac.sistema_ac.controller;
 import br.edu.senac.sistema_ac.domain.entity.Submissao;
 import br.edu.senac.sistema_ac.dto.SubmissaoRequest;
 import br.edu.senac.sistema_ac.dto.SubmissaoUpdateRequest;
+import br.edu.senac.sistema_ac.domain.enums.StatusSubmissao;
 import br.edu.senac.sistema_ac.service.SubmissaoService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -19,9 +20,11 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
+@CrossOrigin(origins = "*")
 @RequestMapping("/api/submissoes")
 @RequiredArgsConstructor
 public class SubmissaoController {
@@ -55,6 +58,19 @@ public class SubmissaoController {
     @PutMapping("/{id}")
     public Submissao atualizar(@PathVariable Long id, @Valid @RequestBody SubmissaoUpdateRequest request) {
         return submissaoService.atualizar(id, request);
+    }
+
+    @PutMapping("/{id}/aprovar")
+    public Submissao aprovar(@PathVariable Long id) {
+        SubmissaoUpdateRequest req = new SubmissaoUpdateRequest(StatusSubmissao.APROVADA, null, null);
+        return submissaoService.atualizar(id, req);
+    }
+
+    @PutMapping("/{id}/reprovar")
+    public Submissao reprovar(@PathVariable Long id, @RequestBody java.util.Map<String, String> body) {
+        String motivo = body == null ? null : body.get("motivo");
+        SubmissaoUpdateRequest req = new SubmissaoUpdateRequest(StatusSubmissao.REPROVADA, null, motivo);
+        return submissaoService.atualizar(id, req);
     }
 
     @DeleteMapping("/{id}")
