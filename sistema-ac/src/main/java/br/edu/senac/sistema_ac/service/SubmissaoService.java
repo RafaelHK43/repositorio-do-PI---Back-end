@@ -30,6 +30,7 @@ public class SubmissaoService {
     private final ValidacaoHorasService validacaoHorasService;
     private final FileStorageService fileStorageService;
     private final OcrService ocrService;
+    private final EmailService emailService;
 
     @Transactional
     public Submissao criar(SubmissaoRequest request, MultipartFile arquivo) {
@@ -96,6 +97,9 @@ public class SubmissaoService {
     public Submissao atualizar(Long id, SubmissaoUpdateRequest request) {
         Submissao submissao = buscarPorId(id);
 
+        // capturar status anterior para detectar mudança
+        var statusAnterior = submissao.getStatus();
+
         if (request.status() != null) {
             submissao.setStatus(request.status());
         }
@@ -118,7 +122,31 @@ public class SubmissaoService {
             submissao.setObservacaoCoordenacao(request.observacaoCoordenacao());
         }
 
-        return submissaoRepository.save(submissao);
+        Submissao salvo = submissaoRepository.save(submissao);
+
+        // disparar email se houve mudanca de status para APROVADA ou REPROVADA
+        if (statusAnterior != salvo.getStatus()) {
+            Usuario aluno = salvo.getAluno();
+            String email = aluno.getEmail();
+            String nomeAluno = aluno.getNome();
+            String tituloAtividade = salvo.getAtividadeComplementar().getTitulo();
+            String nomeCurso = salvo.getAtividadeComplementar().getCurso().getNome();
+
+            if (salvo.getStatus() == StatusSubmissao.APROVADA) {
+                String assunto = "SGAC - Horas Complementares Aprovadas!";
+                String mensagem = String.format("Olá %s, suas horas referentes à atividade '%s' do curso '%s' foram aprovadas!",
+                    nomeAluno, tituloAtividade, nomeCurso);
+                emailService.enviarEmail(email, assunto, mensagem);
+            } else if (salvo.getStatus() == StatusSubmissao.REPROVADA) {
+                String assunto = "SGAC - Horas Complementares Reprovadas";
+                String motivo = request.observacaoCoordenacao() != null ? request.observacaoCoordenacao() : "Motivo nao informado";
+                String mensagem = String.format("Olá %s, infelizmente sua submissão foi reprovada. Motivo: %s",
+                    nomeAluno, motivo);
+                emailService.enviarEmail(email, assunto, mensagem);
+            }
+        }
+
+        return salvo;
     }
 
     @Transactional

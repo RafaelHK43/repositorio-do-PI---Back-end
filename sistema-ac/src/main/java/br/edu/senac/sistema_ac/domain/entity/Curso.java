@@ -7,6 +7,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.util.ArrayList;
@@ -33,8 +34,12 @@ public class Curso {
     @Column(nullable = false, unique = true, length = 120)
     private String nome;
 
+    @Column(name = "carga_horaria_minima", nullable = false)
+    @Builder.Default
+    private Integer cargaHorariaMinima = 0;
+
     @JsonIgnore
-    @OneToMany(mappedBy = "curso")
+    @ManyToMany(mappedBy = "cursos")
     @Builder.Default
     private List<Usuario> usuarios = new ArrayList<>();
 
