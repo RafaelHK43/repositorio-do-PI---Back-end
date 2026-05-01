@@ -29,7 +29,7 @@ public class CursoController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public Curso criar(@Valid @RequestBody CursoRequest request) {
-        return cursoService.criar(request.nome());
+        return cursoService.criar(request);
     }
 
     @GetMapping
@@ -44,7 +44,7 @@ public class CursoController {
 
     @PutMapping("/{id}")
     public Curso atualizar(@PathVariable Long id, @Valid @RequestBody CursoRequest request) {
-        return cursoService.atualizar(id, request.nome());
+        return cursoService.atualizar(id, request);
     }
 
     @DeleteMapping("/{id}")

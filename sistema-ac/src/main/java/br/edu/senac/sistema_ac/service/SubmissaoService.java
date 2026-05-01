@@ -137,14 +137,35 @@ public class SubmissaoService {
     }
 
     @Transactional(readOnly = true)
-    public List<Submissao> listarPorAluno(Long alunoId) {
+    public List<Submissao> listarPorAluno(Long alunoId, StatusSubmissao status) {
+        String emailLogado = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
+        Usuario usuarioLogado = usuarioRepository.findByEmail(emailLogado)
+            .orElseThrow(() -> new IllegalArgumentException("Usuário logado não encontrado"));
+
+        if (usuarioLogado.getPerfil() == br.edu.senac.sistema_ac.domain.enums.PerfilUsuario.ALUNO && !usuarioLogado.getId().equals(alunoId)) {
+            throw new org.springframework.security.access.AccessDeniedException("Acesso negado");
+        }
+
+        if (status != null) {
+            return submissaoRepository.findAllByAlunoIdAndStatusOrderByDataSubmissaoDesc(alunoId, status);
+        }
         return submissaoRepository.findAllByAlunoIdOrderByDataSubmissaoDesc(alunoId);
     }
 
     @Transactional(readOnly = true)
     public Submissao buscarPorId(Long id) {
-        return submissaoRepository.findById(id)
+        String emailLogado = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
+        Usuario usuarioLogado = usuarioRepository.findByEmail(emailLogado)
+            .orElseThrow(() -> new IllegalArgumentException("Usuário logado não encontrado"));
+
+        Submissao submissao = submissaoRepository.findById(id)
             .orElseThrow(() -> new RecursoNaoEncontradoException("Submissao nao encontrada"));
+
+        if (usuarioLogado.getPerfil() == br.edu.senac.sistema_ac.domain.enums.PerfilUsuario.ALUNO && !submissao.getAluno().getId().equals(usuarioLogado.getId())) {
+            throw new org.springframework.security.access.AccessDeniedException("Acesso negado");
+        }
+
+        return submissao;
     }
 
     @Transactional

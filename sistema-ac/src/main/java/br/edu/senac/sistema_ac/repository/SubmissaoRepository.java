@@ -46,6 +46,8 @@ public interface SubmissaoRepository extends JpaRepository<Submissao, Long> {
 
     List<Submissao> findAllByAlunoIdOrderByDataSubmissaoDesc(Long alunoId);
 
+    List<Submissao> findAllByAlunoIdAndStatusOrderByDataSubmissaoDesc(Long alunoId, StatusSubmissao status);
+
     long countByStatus(StatusSubmissao status);
 
     default long countByStatus(String status) {

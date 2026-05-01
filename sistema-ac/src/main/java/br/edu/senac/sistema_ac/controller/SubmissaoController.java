@@ -22,6 +22,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.multipart.MultipartFile;
+import br.edu.senac.sistema_ac.dto.SubmissaoResponse;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @RestController
 @CrossOrigin(origins = "*")
@@ -33,44 +35,46 @@ public class SubmissaoController {
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
-    public Submissao criar(
+    public SubmissaoResponse criar(
         @Valid @RequestPart("dados") SubmissaoRequest request,
         @RequestPart("arquivo") MultipartFile arquivo
     ) {
-        return submissaoService.criar(request, arquivo);
+        return SubmissaoResponse.fromEntity(submissaoService.criar(request, arquivo));
     }
 
     @GetMapping
-    public List<Submissao> listarTodas() {
-        return submissaoService.listarTodas();
+    public List<SubmissaoResponse> listarTodas() {
+        return submissaoService.listarTodas().stream().map(SubmissaoResponse::fromEntity).toList();
     }
 
     @GetMapping("/{id}")
-    public Submissao buscarPorId(@PathVariable Long id) {
-        return submissaoService.buscarPorId(id);
+    public SubmissaoResponse buscarPorId(@PathVariable Long id) {
+        return SubmissaoResponse.fromEntity(submissaoService.buscarPorId(id));
     }
 
     @GetMapping("/aluno/{alunoId}")
-    public List<Submissao> listarPorAluno(@PathVariable Long alunoId) {
-        return submissaoService.listarPorAluno(alunoId);
+    public List<SubmissaoResponse> listarPorAluno(
+            @PathVariable Long alunoId,
+            @RequestParam(required = false) StatusSubmissao status) {
+        return submissaoService.listarPorAluno(alunoId, status).stream().map(SubmissaoResponse::fromEntity).toList();
     }
 
     @PutMapping("/{id}")
-    public Submissao atualizar(@PathVariable Long id, @Valid @RequestBody SubmissaoUpdateRequest request) {
-        return submissaoService.atualizar(id, request);
+    public SubmissaoResponse atualizar(@PathVariable Long id, @Valid @RequestBody SubmissaoUpdateRequest request) {
+        return SubmissaoResponse.fromEntity(submissaoService.atualizar(id, request));
     }
 
     @PutMapping("/{id}/aprovar")
-    public Submissao aprovar(@PathVariable Long id) {
+    public SubmissaoResponse aprovar(@PathVariable Long id) {
         SubmissaoUpdateRequest req = new SubmissaoUpdateRequest(StatusSubmissao.APROVADA, null, null);
-        return submissaoService.atualizar(id, req);
+        return SubmissaoResponse.fromEntity(submissaoService.atualizar(id, req));
     }
 
     @PutMapping("/{id}/reprovar")
-    public Submissao reprovar(@PathVariable Long id, @RequestBody java.util.Map<String, String> body) {
+    public SubmissaoResponse reprovar(@PathVariable Long id, @RequestBody java.util.Map<String, String> body) {
         String motivo = body == null ? null : body.get("motivo");
         SubmissaoUpdateRequest req = new SubmissaoUpdateRequest(StatusSubmissao.REPROVADA, null, motivo);
-        return submissaoService.atualizar(id, req);
+        return SubmissaoResponse.fromEntity(submissaoService.atualizar(id, req));
     }
 
     @DeleteMapping("/{id}")
