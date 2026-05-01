@@ -5,6 +5,7 @@ import br.edu.senac.sistema_ac.exception.RecursoNaoEncontradoException;
 import br.edu.senac.sistema_ac.repository.AtividadeComplementarRepository;
 import br.edu.senac.sistema_ac.repository.CursoRepository;
 import br.edu.senac.sistema_ac.repository.UsuarioRepository;
+import br.edu.senac.sistema_ac.dto.CursoRequest;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,13 +20,14 @@ public class CursoService {
     private final AtividadeComplementarRepository atividadeComplementarRepository;
 
     @Transactional
-    public Curso criar(String nome) {
-        cursoRepository.findByNomeIgnoreCase(nome).ifPresent(c -> {
+    public Curso criar(br.edu.senac.sistema_ac.dto.CursoRequest request) {
+        cursoRepository.findByNomeIgnoreCase(request.nome()).ifPresent(c -> {
             throw new IllegalArgumentException("Ja existe um curso com este nome");
         });
 
         Curso curso = Curso.builder()
-            .nome(nome)
+            .nome(request.nome())
+            .cargaHorariaMinima(request.cargaHorariaMinima() != null ? request.cargaHorariaMinima() : 0)
             .build();
 
         return cursoRepository.save(curso);
@@ -43,16 +45,19 @@ public class CursoService {
     }
 
     @Transactional
-    public Curso atualizar(Long id, String nome) {
+    public Curso atualizar(Long id, CursoRequest request) {
         Curso curso = buscarPorId(id);
 
-        cursoRepository.findByNomeIgnoreCase(nome).ifPresent(cursoExistente -> {
+        cursoRepository.findByNomeIgnoreCase(request.nome()).ifPresent(cursoExistente -> {
             if (!cursoExistente.getId().equals(id)) {
                 throw new IllegalArgumentException("Ja existe um curso com este nome");
             }
         });
 
-        curso.setNome(nome);
+        curso.setNome(request.nome());
+        if (request.cargaHorariaMinima() != null) {
+            curso.setCargaHorariaMinima(request.cargaHorariaMinima());
+        }
         return cursoRepository.save(curso);
     }
 
