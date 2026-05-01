@@ -16,8 +16,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import jakarta.validation.Valid;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
-
 import org.springframework.web.bind.annotation.RequestParam;
 
 @RestController
@@ -36,7 +36,7 @@ public class UsuarioController {
     }
 
     @PostMapping
-    public ResponseEntity<UsuarioResponseDTO> criar(@RequestBody UsuarioRequestDTO request) {
+    public ResponseEntity<UsuarioResponseDTO> criar(@Valid @RequestBody UsuarioRequestDTO request) {
         UsuarioResponseDTO criado = usuarioService.salvar(request);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}")
             .buildAndExpand(criado.id()).toUri();
@@ -44,7 +44,7 @@ public class UsuarioController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<UsuarioResponseDTO> atualizar(@PathVariable Long id, @RequestBody UsuarioRequestDTO request) {
+    public ResponseEntity<UsuarioResponseDTO> atualizar(@PathVariable Long id, @Valid @RequestBody UsuarioRequestDTO request) {
         UsuarioResponseDTO atualizado = usuarioService.atualizar(id, request);
         return ResponseEntity.ok(atualizado);
     }

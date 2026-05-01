@@ -25,6 +25,14 @@ public class FileStorageService {
         }
     }
 
+    public Path getUploadPath() {
+        return uploadPath;
+    }
+
+    /**
+     * Saves the file and returns only the generated filename (not the absolute path),
+     * so it can be used to construct a public URL.
+     */
     public String salvarComprovante(MultipartFile arquivo, Long alunoId) {
         String nomeOriginal = Objects.requireNonNullElse(arquivo.getOriginalFilename(), "arquivo");
         String nomeSanitizado = nomeOriginal.replaceAll("[^a-zA-Z0-9._-]", "_");
@@ -33,19 +41,27 @@ public class FileStorageService {
         try {
             Path destino = uploadPath.resolve(nomeFinal);
             Files.copy(arquivo.getInputStream(), destino, StandardCopyOption.REPLACE_EXISTING);
-            return destino.toString();
+            return nomeFinal;
         } catch (IOException ex) {
             throw new IllegalStateException("Falha ao salvar arquivo do comprovante", ex);
         }
     }
 
-    public void removerArquivo(String caminhoArquivo) {
-        if (caminhoArquivo == null || caminhoArquivo.isBlank()) {
+    /**
+     * Accepts either a bare filename or an absolute path.
+     * Bare filenames are resolved against the configured upload directory.
+     */
+    public void removerArquivo(String nomeOuCaminho) {
+        if (nomeOuCaminho == null || nomeOuCaminho.isBlank()) {
             return;
         }
 
         try {
-            Files.deleteIfExists(Paths.get(caminhoArquivo));
+            Path alvo = Paths.get(nomeOuCaminho);
+            if (!alvo.isAbsolute()) {
+                alvo = uploadPath.resolve(nomeOuCaminho);
+            }
+            Files.deleteIfExists(alvo);
         } catch (IOException ex) {
             throw new IllegalStateException("Falha ao remover arquivo do comprovante", ex);
         }

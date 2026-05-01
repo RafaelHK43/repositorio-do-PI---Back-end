@@ -10,6 +10,11 @@ public class OcrService {
         if (arquivo == null || arquivo.isEmpty()) {
             throw new IllegalArgumentException("Arquivo invalido para OCR");
         }
-        return "Certificado Processado";
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        return "Certificado Processado com Sucesso";
     }
 }

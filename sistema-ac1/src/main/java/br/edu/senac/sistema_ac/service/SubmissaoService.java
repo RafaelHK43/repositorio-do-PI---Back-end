@@ -44,20 +44,7 @@ public class SubmissaoService {
             throw new IllegalArgumentException("Arquivo do comprovante e obrigatorio");
         }
 
-        AreaAtividade areaEnum;
-        if (request.areaId() instanceof String) {
-            String areaStr = (String) request.areaId();
-            if (areaStr.matches("\\d+")) {
-                areaEnum = AreaAtividade.values()[Integer.parseInt(areaStr) - 1]; // Assume id 1-based, ou ajuste se for 0-based
-            } else {
-                areaEnum = AreaAtividade.valueOf(areaStr.toUpperCase());
-            }
-        } else if (request.areaId() instanceof Number) {
-            int id = ((Number) request.areaId()).intValue();
-            areaEnum = AreaAtividade.values()[id - 1];
-        } else {
-            throw new IllegalArgumentException("Formato de areaId invalido");
-        }
+        AreaAtividade areaEnum = resolverAreaAtividade(request.areaId());
 
         validacaoHorasService.validarLimiteHorasPorArea(
             aluno.getId(),
@@ -241,5 +228,39 @@ public class SubmissaoService {
         submissaoRepository.delete(submissao);
         atividadeComplementarRepository.delete(atividade);
         fileStorageService.removerArquivo(certificadoUrl);
+    }
+
+    /**
+     * Converts the areaId field (which may arrive as enum name string, numeric index
+     * 0-based, or numeric index 1-based) into the corresponding AreaAtividade enum.
+     */
+    private AreaAtividade resolverAreaAtividade(Object areaId) {
+        AreaAtividade[] values = AreaAtividade.values();
+        try {
+            if (areaId instanceof String areaStr) {
+                String trimmed = areaStr.trim();
+                if (trimmed.matches("\\d+")) {
+                    return resolverPorIndice(Integer.parseInt(trimmed), values);
+                }
+                return AreaAtividade.valueOf(trimmed.toUpperCase());
+            }
+            if (areaId instanceof Number num) {
+                return resolverPorIndice(num.intValue(), values);
+            }
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException(
+                "Area de atividade invalida: '" + areaId + "'. Valores aceitos: ENSINO, PESQUISA, EXTENSAO, CULTURA, EVENTOS");
+        }
+        throw new IllegalArgumentException("Formato de areaId invalido: " + areaId);
+    }
+
+    private AreaAtividade resolverPorIndice(int idx, AreaAtividade[] values) {
+        if (idx >= 1 && idx <= values.length) {
+            return values[idx - 1]; // 1-based
+        }
+        if (idx >= 0 && idx < values.length) {
+            return values[idx]; // 0-based fallback
+        }
+        throw new IllegalArgumentException("Indice de area fora do intervalo valido: " + idx);
     }
 }

@@ -1,0 +1,14 @@
+package br.edu.senac.sistema_ac.dto;
+
+import java.math.BigDecimal;
+
+public record MetricaCursoDTO(
+    Long cursoId,
+    String cursoNome,
+    long totalSubmissoes,
+    long submissoesPendentes,
+    long submissoesAprovadas,
+    long submissoesReprovadas,
+    BigDecimal horasAprovadas
+) {
+}

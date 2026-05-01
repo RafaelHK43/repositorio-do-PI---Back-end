@@ -29,6 +29,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/api/login", "/login").permitAll()
                 .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                .requestMatchers("/api/uploads/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/cursos/**", "/api/regras/**")
                     .hasAnyRole("SUPER_ADMIN", "COORDENADOR")
                 .requestMatchers(HttpMethod.GET, "/api/cursos/**", "/api/regras/**")
