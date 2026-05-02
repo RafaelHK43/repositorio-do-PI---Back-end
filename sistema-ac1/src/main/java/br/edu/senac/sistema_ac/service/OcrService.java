@@ -10,17 +10,23 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 public class OcrService {
 
+    private static final int TAMANHO_MAXIMO_RESULTADO_OCR = 5000;
+
     public String extrairDados(MultipartFile arquivo) {
-        if (arquivo == null || arquivo.isEmpty()) {
-            throw new IllegalArgumentException("Arquivo invalido para OCR");
-        }
+        try {
+            if (arquivo == null || arquivo.isEmpty()) {
+                return "OCR não processado";
+            }
 
-        String contentType = arquivo.getContentType();
-        if (contentType != null && contentType.equals("application/pdf")) {
-            return extrairTextoPdf(arquivo);
-        }
+            String contentType = arquivo.getContentType();
+            if (contentType != null && contentType.equalsIgnoreCase("application/pdf")) {
+                return limitarResultado(extrairTextoPdf(arquivo));
+            }
 
-        return "Arquivo recebido: " + arquivo.getOriginalFilename();
+            return limitarResultado("Certificado processado: " + arquivo.getOriginalFilename());
+        } catch (Exception e) {
+            return "OCR não processado";
+        }
     }
 
     private String extrairTextoPdf(MultipartFile arquivo) {
@@ -33,5 +39,18 @@ public class OcrService {
         } catch (IOException e) {
             throw new RuntimeException("Erro ao processar PDF: " + e.getMessage(), e);
         }
+    }
+
+    private String limitarResultado(String texto) {
+        if (texto == null || texto.isBlank()) {
+            return "OCR não processado";
+        }
+
+        String textoLimpo = texto.trim();
+        if (textoLimpo.length() <= TAMANHO_MAXIMO_RESULTADO_OCR) {
+            return textoLimpo;
+        }
+
+        return textoLimpo.substring(0, TAMANHO_MAXIMO_RESULTADO_OCR);
     }
 }

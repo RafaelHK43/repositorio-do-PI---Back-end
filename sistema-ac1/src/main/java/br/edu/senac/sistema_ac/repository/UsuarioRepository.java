@@ -4,6 +4,7 @@ import br.edu.senac.sistema_ac.domain.entity.Usuario;
 import br.edu.senac.sistema_ac.domain.enums.PerfilUsuario;
 import java.util.Optional;
 import java.util.List;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import org.springframework.data.repository.query.Param;
@@ -11,6 +12,9 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     Optional<Usuario> findByEmail(String email);
+
+    @EntityGraph(attributePaths = "cursos")
+    Optional<Usuario> findWithCursosByEmail(String email);
 
     @Query("SELECT DISTINCT u FROM Usuario u LEFT JOIN u.cursos c " +
            "WHERE (:perfil IS NULL OR u.perfil = :perfil) " +

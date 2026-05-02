@@ -41,6 +41,7 @@ public class AuthController {
         }
 
         return new AuthResponse(
+            usuario.getId(),
             usuario.getNome(),
             usuario.getEmail(),
             usuario.getPerfil()

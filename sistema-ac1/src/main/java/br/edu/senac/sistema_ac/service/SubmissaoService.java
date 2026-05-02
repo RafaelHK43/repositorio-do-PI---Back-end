@@ -5,6 +5,7 @@ import br.edu.senac.sistema_ac.domain.entity.Curso;
 import br.edu.senac.sistema_ac.domain.entity.Submissao;
 import br.edu.senac.sistema_ac.domain.entity.Usuario;
 import br.edu.senac.sistema_ac.domain.enums.AreaAtividade;
+import br.edu.senac.sistema_ac.domain.enums.PerfilUsuario;
 import br.edu.senac.sistema_ac.domain.enums.StatusSubmissao;
 import br.edu.senac.sistema_ac.domain.enums.TipoArquivoComprovante;
 import br.edu.senac.sistema_ac.dto.SubmissaoRequest;
@@ -14,6 +15,7 @@ import br.edu.senac.sistema_ac.repository.SubmissaoRepository;
 import br.edu.senac.sistema_ac.repository.UsuarioRepository;
 import br.edu.senac.sistema_ac.exception.RecursoNaoEncontradoException;
 import java.math.BigDecimal;
+import java.text.Normalizer;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -36,31 +38,39 @@ public class SubmissaoService {
 
     @Transactional
     public Submissao criar(SubmissaoRequest request, MultipartFile arquivo) {
-        Usuario aluno = usuarioRepository.findById(request.alunoId())
-            .orElseThrow(() -> new IllegalArgumentException("Aluno nao encontrado"));
-        Curso curso = cursoService.buscarPorId(request.cursoId());
+        Long alunoId = validarAlunoId(request);
+        Long cursoId = validarCursoId(request);
+        Object area = validarArea(request);
+        BigDecimal cargaHoraria = validarCargaHoraria(request);
+        String titulo = validarTitulo(request);
+        String descricao = request.getDescricao();
+        var dataAtividade = validarDataAtividade(request);
 
         if (arquivo == null || arquivo.isEmpty()) {
-            throw new IllegalArgumentException("Arquivo do comprovante e obrigatorio");
+            throw new IllegalArgumentException("Comprovante é obrigatório.");
         }
 
-        AreaAtividade areaEnum = resolverAreaAtividade(request.areaId());
+        Usuario aluno = usuarioRepository.findById(alunoId)
+            .orElseThrow(() -> new IllegalArgumentException("Aluno nao encontrado"));
+        Curso curso = cursoService.buscarPorId(cursoId);
+
+        AreaAtividade areaEnum = resolverAreaAtividade(area);
 
         validacaoHorasService.validarLimiteHorasPorArea(
             aluno.getId(),
             curso.getId(),
             areaEnum,
-            request.workload()
+            cargaHoraria
         );
 
         AtividadeComplementar atividade = AtividadeComplementar.builder()
             .aluno(aluno)
             .curso(curso)
-            .titulo(request.title())
-            .descricao(request.descricao())
+            .titulo(titulo)
+            .descricao(descricao)
             .area(areaEnum)
-            .horasDeclaradas(request.workload())
-            .dataAtividade(request.dataAtividade())
+            .horasDeclaradas(cargaHoraria)
+            .dataAtividade(dataAtividade)
             .build();
 
         atividade = atividadeComplementarRepository.save(atividade);
@@ -82,12 +92,15 @@ public class SubmissaoService {
         
         // Enviar email para coordenadores
         try {
-            List<Usuario> coords = usuarioRepository.findAllByPerfil(br.edu.senac.sistema_ac.domain.enums.PerfilUsuario.COORDENADOR);
+            List<Usuario> coords = usuarioRepository.findAllByFiltrosECursos(
+                PerfilUsuario.COORDENADOR,
+                List.of(curso.getId())
+            );
             if (!coords.isEmpty()) {
                 for (Usuario coord : coords) {
                     String assunto = "Nova submissão recebida!";
                     String msg = String.format("O aluno %s submeteu uma nova atividade (%s). Acesse o painel para avaliar.", 
-                        aluno.getNome(), request.title());
+                        aluno.getNome(), titulo);
                     emailService.enviarEmail(coord.getEmail(), assunto, msg);
                 }
             }
@@ -223,28 +236,82 @@ public class SubmissaoService {
         fileStorageService.removerArquivo(certificadoUrl);
     }
 
-    /**
-     * Converts the areaId field (which may arrive as enum name string, numeric index
-     * 0-based, or numeric index 1-based) into the corresponding AreaAtividade enum.
-     */
+    private Long validarAlunoId(SubmissaoRequest request) {
+        Long alunoId = request.getAlunoId();
+        if (alunoId == null) {
+            throw new IllegalArgumentException("Aluno é obrigatório.");
+        }
+        return alunoId;
+    }
+
+    private Long validarCursoId(SubmissaoRequest request) {
+        Long cursoId = request.cursoId();
+        if (cursoId == null) {
+            throw new IllegalArgumentException("Curso é obrigatório.");
+        }
+        return cursoId;
+    }
+
+    private Object validarArea(SubmissaoRequest request) {
+        Object area = request.getArea();
+        if (area == null || area instanceof String areaStr && areaStr.isBlank()) {
+            throw new IllegalArgumentException("Área é obrigatória.");
+        }
+        return area;
+    }
+
+    private BigDecimal validarCargaHoraria(SubmissaoRequest request) {
+        BigDecimal cargaHoraria = request.getCargaHoraria();
+        if (cargaHoraria == null || cargaHoraria.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Carga horária deve ser maior que zero.");
+        }
+        return cargaHoraria;
+    }
+
+    private String validarTitulo(SubmissaoRequest request) {
+        String titulo = request.getTitulo();
+        if (titulo == null || titulo.isBlank()) {
+            throw new IllegalArgumentException("Título é obrigatório.");
+        }
+        return titulo;
+    }
+
+    private java.time.LocalDate validarDataAtividade(SubmissaoRequest request) {
+        java.time.LocalDate dataAtividade = request.getDataAtividade();
+        if (dataAtividade == null) {
+            throw new IllegalArgumentException("Data da atividade é obrigatória.");
+        }
+        return dataAtividade;
+    }
+
     private AreaAtividade resolverAreaAtividade(Object areaId) {
         AreaAtividade[] values = AreaAtividade.values();
         try {
+            if (areaId instanceof AreaAtividade areaEnum) {
+                return areaEnum;
+            }
             if (areaId instanceof String areaStr) {
                 String trimmed = areaStr.trim();
                 if (trimmed.matches("\\d+")) {
                     return resolverPorIndice(Integer.parseInt(trimmed), values);
                 }
-                return AreaAtividade.valueOf(trimmed.toUpperCase());
+                return AreaAtividade.valueOf(normalizarArea(trimmed));
             }
             if (areaId instanceof Number num) {
                 return resolverPorIndice(num.intValue(), values);
             }
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException(
-                "Area de atividade invalida: '" + areaId + "'. Valores aceitos: ENSINO, PESQUISA, EXTENSAO, CULTURA, EVENTOS");
+                "Área de atividade inválida: '" + areaId + "'. Valores aceitos: ENSINO, PESQUISA, EXTENSAO, CULTURA, EVENTOS");
         }
-        throw new IllegalArgumentException("Formato de areaId invalido: " + areaId);
+        throw new IllegalArgumentException("Formato de área inválido: " + areaId);
+    }
+
+    private String normalizarArea(String area) {
+        return Normalizer.normalize(area, Normalizer.Form.NFD)
+            .replaceAll("\\p{M}", "")
+            .toUpperCase()
+            .replace('Ç', 'C');
     }
 
     private AreaAtividade resolverPorIndice(int idx, AreaAtividade[] values) {

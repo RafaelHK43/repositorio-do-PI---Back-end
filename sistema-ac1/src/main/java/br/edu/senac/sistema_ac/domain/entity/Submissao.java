@@ -11,6 +11,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
@@ -61,7 +62,8 @@ public class Submissao {
     @Column(length = 20)
     private TipoArquivoComprovante tipoArquivoComprovante;
 
-    @Column(length = 2000)
+    @Lob
+    @Column(name = "resultado_ocr", columnDefinition = "LONGTEXT")
     private String resultadoOcr;
 
     @Column(length = 1000)

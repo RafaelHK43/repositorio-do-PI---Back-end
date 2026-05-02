@@ -13,10 +13,12 @@ public enum TipoArquivoComprovante {
             return PDF;
         }
 
-        if (contentType.startsWith("image/")) {
+        if ("image/png".equalsIgnoreCase(contentType)
+            || "image/jpeg".equalsIgnoreCase(contentType)
+            || "image/jpg".equalsIgnoreCase(contentType)) {
             return IMAGEM;
         }
 
-        throw new IllegalArgumentException("Tipo de arquivo nao suportado. Envie PDF ou imagem");
+        throw new IllegalArgumentException("Tipo de arquivo não suportado. Envie PDF, PNG, JPG ou JPEG.");
     }
 }

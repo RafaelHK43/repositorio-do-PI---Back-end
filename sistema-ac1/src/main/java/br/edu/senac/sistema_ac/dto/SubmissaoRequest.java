@@ -1,32 +1,52 @@
 package br.edu.senac.sistema_ac.dto;
 
-import br.edu.senac.sistema_ac.domain.enums.AreaAtividade;
-import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public record SubmissaoRequest(
-    @NotNull(message = "alunoId e obrigatorio")
     Long alunoId,
-
-    @NotNull(message = "cursoId e obrigatorio")
     Long cursoId,
-
-    @NotBlank(message = "title e obrigatorio")
-    String title,
-
+    String titulo,
     String descricao,
+    Object area,
+    BigDecimal cargaHoraria,
+    LocalDate dataAtividade,
 
-    @NotNull(message = "areaId e obrigatoria")
+    Long studentId,
+    String title,
     Object areaId,
-
-    @NotNull(message = "workload e obrigatorio")
-    @DecimalMin(value = "0.1", message = "workload deve ser maior que zero")
     BigDecimal workload,
-
-    @NotNull(message = "dataAtividade e obrigatoria")
-    LocalDate dataAtividade
+    LocalDate activityDate,
+    String description
 ) {
+    public Long getAlunoId() {
+        return alunoId != null ? alunoId : studentId;
+    }
+
+    public String getTitulo() {
+        return primeiroTexto(titulo, title);
+    }
+
+    public Object getArea() {
+        return area != null ? area : areaId;
+    }
+
+    public BigDecimal getCargaHoraria() {
+        return cargaHoraria != null ? cargaHoraria : workload;
+    }
+
+    public LocalDate getDataAtividade() {
+        return dataAtividade != null ? dataAtividade : activityDate;
+    }
+
+    public String getDescricao() {
+        return primeiroTexto(descricao, description);
+    }
+
+    private static String primeiroTexto(String novo, String antigo) {
+        if (novo != null) {
+            return novo;
+        }
+        return antigo;
+    }
 }

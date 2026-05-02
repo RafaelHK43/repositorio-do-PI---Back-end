@@ -1,56 +1,54 @@
 package br.edu.senac.sistema_ac.dto;
 
+import br.edu.senac.sistema_ac.domain.entity.AtividadeComplementar;
 import br.edu.senac.sistema_ac.domain.entity.Submissao;
+import br.edu.senac.sistema_ac.domain.enums.AreaAtividade;
 import br.edu.senac.sistema_ac.domain.enums.StatusSubmissao;
-import br.edu.senac.sistema_ac.domain.enums.TipoArquivoComprovante;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public record SubmissaoResponse(
     Long id,
     Long alunoId,
     String alunoNome,
-    Long atividadeId,
-    String atividadeTitulo,
+    Long cursoId,
     String cursoNome,
+    AreaAtividade area,
+    String titulo,
+    String descricao,
+    BigDecimal cargaHoraria,
     StatusSubmissao status,
-    BigDecimal horasAprovadas,
     String certificadoUrl,
     String nomeArquivoComprovante,
-    TipoArquivoComprovante tipoArquivoComprovante,
-    String resultadoOcr,
-    String observacaoCoordenacao,
-    LocalDateTime dataSubmissao
+    LocalDateTime dataSubmissao,
+    LocalDate dataAtividade
 ) {
     public static SubmissaoResponse fromEntity(Submissao submissao) {
+        AtividadeComplementar atividade = submissao.getAtividadeComplementar();
+
         return new SubmissaoResponse(
             submissao.getId(),
             submissao.getAluno() != null ? submissao.getAluno().getId() : null,
             submissao.getAluno() != null ? submissao.getAluno().getNome() : null,
-            submissao.getAtividadeComplementar() != null ? submissao.getAtividadeComplementar().getId() : null,
-            submissao.getAtividadeComplementar() != null ? submissao.getAtividadeComplementar().getTitulo() : null,
-            submissao.getAtividadeComplementar() != null && submissao.getAtividadeComplementar().getCurso() != null
-                ? submissao.getAtividadeComplementar().getCurso().getNome() : null,
+            atividade != null && atividade.getCurso() != null ? atividade.getCurso().getId() : null,
+            atividade != null && atividade.getCurso() != null ? atividade.getCurso().getNome() : null,
+            atividade != null ? atividade.getArea() : null,
+            atividade != null ? atividade.getTitulo() : null,
+            atividade != null ? atividade.getDescricao() : null,
+            atividade != null ? atividade.getHorasDeclaradas() : null,
             submissao.getStatus(),
-            submissao.getHorasAprovadas(),
             buildCertificadoUrl(submissao.getCertificadoUrl()),
             submissao.getNomeArquivoComprovante(),
-            submissao.getTipoArquivoComprovante(),
-            submissao.getResultadoOcr(),
-            submissao.getObservacaoCoordenacao(),
-            submissao.getDataSubmissao()
+            submissao.getDataSubmissao(),
+            atividade != null ? atividade.getDataAtividade() : null
         );
     }
 
-    /**
-     * Converts a stored filename or legacy absolute path into a public-facing URL.
-     * New submissions store only the filename; legacy rows may contain an absolute path.
-     */
     private static String buildCertificadoUrl(String certificadoUrl) {
         if (certificadoUrl == null || certificadoUrl.isBlank()) {
             return null;
         }
-        // Extract bare filename from any absolute or relative path
         int lastSep = Math.max(certificadoUrl.lastIndexOf('/'), certificadoUrl.lastIndexOf('\\'));
         String filename = lastSep >= 0 ? certificadoUrl.substring(lastSep + 1) : certificadoUrl;
         return "/api/uploads/" + filename;
