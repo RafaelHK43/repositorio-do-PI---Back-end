@@ -37,6 +37,11 @@ public class UsuarioController {
         return ResponseEntity.ok(usuarioService.listarTodos(perfil, cursoId, authentication));
     }
 
+    @GetMapping("/me")
+    public ResponseEntity<UsuarioResponseDTO> buscarUsuarioLogado(Authentication authentication) {
+        return ResponseEntity.ok(usuarioService.buscarUsuarioLogado(authentication));
+    }
+
     @PostMapping
     public ResponseEntity<UsuarioResponseDTO> criar(@Valid @RequestBody UsuarioRequestDTO request) {
         UsuarioResponseDTO criado = usuarioService.salvar(request);

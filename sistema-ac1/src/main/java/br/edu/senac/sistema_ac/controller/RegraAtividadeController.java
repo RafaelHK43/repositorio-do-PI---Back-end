@@ -1,7 +1,7 @@
 package br.edu.senac.sistema_ac.controller;
 
-import br.edu.senac.sistema_ac.domain.entity.RegraAtividade;
 import br.edu.senac.sistema_ac.dto.RegraAtividadeRequest;
+import br.edu.senac.sistema_ac.dto.RegraAtividadeResponse;
 import br.edu.senac.sistema_ac.service.RegraAtividadeService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -28,37 +28,43 @@ public class RegraAtividadeController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public RegraAtividade criarOuAtualizar(@Valid @RequestBody RegraAtividadeRequest request) {
-        return regraAtividadeService.criarOuAtualizar(
+    public RegraAtividadeResponse criarOuAtualizar(@Valid @RequestBody RegraAtividadeRequest request) {
+        return RegraAtividadeResponse.fromEntity(regraAtividadeService.criarOuAtualizar(
             request.cursoId(),
             request.area(),
             request.limiteHoras()
-        );
+        ));
     }
 
     @GetMapping("/curso/{cursoId}")
-    public List<RegraAtividade> listarPorCurso(@PathVariable Long cursoId) {
-        return regraAtividadeService.listarPorCurso(cursoId);
+    public List<RegraAtividadeResponse> listarPorCurso(@PathVariable Long cursoId) {
+        return regraAtividadeService.listarPorCurso(cursoId)
+            .stream()
+            .map(RegraAtividadeResponse::fromEntity)
+            .toList();
     }
 
     @GetMapping
-    public List<RegraAtividade> listarTodas() {
-        return regraAtividadeService.listarTodas();
+    public List<RegraAtividadeResponse> listarTodas() {
+        return regraAtividadeService.listarTodas()
+            .stream()
+            .map(RegraAtividadeResponse::fromEntity)
+            .toList();
     }
 
     @GetMapping("/{id}")
-    public RegraAtividade buscarPorId(@PathVariable Long id) {
-        return regraAtividadeService.buscarPorId(id);
+    public RegraAtividadeResponse buscarPorId(@PathVariable Long id) {
+        return RegraAtividadeResponse.fromEntity(regraAtividadeService.buscarPorId(id));
     }
 
     @PutMapping("/{id}")
-    public RegraAtividade atualizar(@PathVariable Long id, @Valid @RequestBody RegraAtividadeRequest request) {
-        return regraAtividadeService.atualizar(
+    public RegraAtividadeResponse atualizar(@PathVariable Long id, @Valid @RequestBody RegraAtividadeRequest request) {
+        return RegraAtividadeResponse.fromEntity(regraAtividadeService.atualizar(
             id,
             request.cursoId(),
             request.area(),
             request.limiteHoras()
-        );
+        ));
     }
 
     @DeleteMapping("/{id}")

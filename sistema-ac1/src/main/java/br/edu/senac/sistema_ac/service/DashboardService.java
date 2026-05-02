@@ -111,6 +111,10 @@ public class DashboardService {
             .map(s -> s.getAtividadeComplementar().getHorasDeclaradas())
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+        long pendentes = submissoes.stream().filter(s -> s.getStatus() == StatusSubmissao.PENDENTE).count();
+        long aprovadas = submissoes.stream().filter(s -> s.getStatus() == StatusSubmissao.APROVADA).count();
+        long reprovadas = submissoes.stream().filter(s -> s.getStatus() == StatusSubmissao.REPROVADA).count();
+
         double percentualConcluido = cargaHorariaMinima > 0
             ? totalHorasAprovadas.multiply(BigDecimal.valueOf(100))
                 .divide(BigDecimal.valueOf(cargaHorariaMinima), 2, RoundingMode.HALF_UP)
@@ -125,22 +129,28 @@ public class DashboardService {
         List<HorasAreaDTO> horasPorArea = Arrays.stream(AreaAtividade.values())
             .map(area -> {
                 List<Submissao> subs = porArea.getOrDefault(area, List.of());
-                BigDecimal aprovadas = subs.stream()
+                BigDecimal horasAprovadasPorArea = subs.stream()
                     .filter(s -> s.getStatus() == StatusSubmissao.APROVADA && s.getHorasAprovadas() != null)
                     .map(Submissao::getHorasAprovadas)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
-                BigDecimal pendentes = subs.stream()
+                BigDecimal horasPendentesPorArea = subs.stream()
                     .filter(s -> s.getStatus() == StatusSubmissao.PENDENTE)
                     .map(s -> s.getAtividadeComplementar().getHorasDeclaradas())
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
-                return new HorasAreaDTO(area, aprovadas, pendentes);
+                return new HorasAreaDTO(area, horasAprovadasPorArea, horasPendentesPorArea);
             })
             .collect(Collectors.toList());
 
         return new AlunoProgressoDTO(
+            submissoes.size(),
+            pendentes,
+            aprovadas,
+            reprovadas,
+            totalHorasAprovadas,
+            cargaHorariaMinima,
+            percentualConcluido,
             totalHorasAprovadas,
             totalHorasPendentes,
-            cargaHorariaMinima,
             percentualConcluido,
             horasPorArea
         );

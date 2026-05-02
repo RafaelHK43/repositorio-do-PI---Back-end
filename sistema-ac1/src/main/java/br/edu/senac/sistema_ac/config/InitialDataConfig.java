@@ -11,6 +11,7 @@ import br.edu.senac.sistema_ac.repository.UsuarioRepository;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
@@ -40,9 +41,27 @@ public class InitialDataConfig {
                 ads = cursoRepository.save(ads);
             }
 
-            criarUsuarioSeNaoExistir("Super Admin", "admin@senac.br", PerfilUsuario.SUPER_ADMIN, List.of());
-            criarUsuarioSeNaoExistir("Coordenador", "coordenador@senac.br", PerfilUsuario.COORDENADOR, List.of(ads));
-            criarUsuarioSeNaoExistir("Aluno", "aluno@senac.br", PerfilUsuario.ALUNO, List.of(ads));
+            criarOuAtualizarUsuarioInicial(
+                "Mariana Costa",
+                "mariana.costa@gmail.com",
+                PerfilUsuario.SUPER_ADMIN,
+                List.of("admin@senac.br"),
+                List.of()
+            );
+            criarOuAtualizarUsuarioInicial(
+                "Carlos Eduardo Lima",
+                "mateuh29@gmail.com",
+                PerfilUsuario.COORDENADOR,
+                List.of("coordenador@senac.br"),
+                List.of(ads)
+            );
+            criarOuAtualizarUsuarioInicial(
+                "Ana Beatriz Santos",
+                "ana.beatriz@gmail.com",
+                PerfilUsuario.ALUNO,
+                List.of("aluno@senac.br"),
+                List.of(ads)
+            );
 
             criarRegraSeNaoExistir(ads, AreaAtividade.ENSINO, 40);
             criarRegraSeNaoExistir(ads, AreaAtividade.PESQUISA, 40);
@@ -52,8 +71,14 @@ public class InitialDataConfig {
         };
     }
 
-    private Usuario criarUsuarioSeNaoExistir(String nome, String email, PerfilUsuario perfil, List<Curso> cursos) {
-        Usuario usuario = usuarioRepository.findWithCursosByEmail(email)
+    private Usuario criarOuAtualizarUsuarioInicial(
+        String nome,
+        String email,
+        PerfilUsuario perfil,
+        List<String> emailsAntigos,
+        List<Curso> cursos
+    ) {
+        Usuario usuario = buscarUsuarioInicial(email, emailsAntigos, perfil)
             .orElseGet(() -> Usuario.builder()
                 .nome(nome)
                 .email(email)
@@ -63,6 +88,7 @@ public class InitialDataConfig {
                 .build());
 
         usuario.setNome(nome);
+        usuario.setEmail(email);
         usuario.setSenha(passwordEncoder.encode("123456"));
         usuario.setPerfil(perfil);
 
@@ -76,6 +102,22 @@ public class InitialDataConfig {
         }
 
         return usuarioRepository.save(usuario);
+    }
+
+    private Optional<Usuario> buscarUsuarioInicial(String email, List<String> emailsAntigos, PerfilUsuario perfil) {
+        Optional<Usuario> usuarioPorEmailNovo = usuarioRepository.findWithCursosByEmail(email);
+        if (usuarioPorEmailNovo.isPresent()) {
+            return usuarioPorEmailNovo;
+        }
+
+        for (String emailAntigo : emailsAntigos) {
+            Optional<Usuario> usuarioPorEmailAntigo = usuarioRepository.findWithCursosByEmail(emailAntigo);
+            if (usuarioPorEmailAntigo.isPresent()) {
+                return usuarioPorEmailAntigo;
+            }
+        }
+
+        return usuarioRepository.findWithCursosByPerfil(perfil).stream().findFirst();
     }
 
     private void criarRegraSeNaoExistir(Curso curso, AreaAtividade area, int limiteHoras) {

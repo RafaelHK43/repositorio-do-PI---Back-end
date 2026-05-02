@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/uploads")
+@RequestMapping({"/api/uploads", "/uploads"})
 @RequiredArgsConstructor
 public class UploadController {
 
@@ -38,6 +38,7 @@ public class UploadController {
         Resource resource = new FileSystemResource(arquivo);
         return ResponseEntity.ok()
             .contentType(MediaType.parseMediaType(contentType))
+            .contentLength(Files.size(arquivo))
             .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + arquivo.getFileName() + "\"")
             .body(resource);
     }

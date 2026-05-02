@@ -16,6 +16,9 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     @EntityGraph(attributePaths = "cursos")
     Optional<Usuario> findWithCursosByEmail(String email);
 
+    @EntityGraph(attributePaths = "cursos")
+    List<Usuario> findWithCursosByPerfil(PerfilUsuario perfil);
+
     @Query("SELECT DISTINCT u FROM Usuario u LEFT JOIN u.cursos c " +
            "WHERE (:perfil IS NULL OR u.perfil = :perfil) " +
            "AND (:cursoId IS NULL OR c.id = :cursoId)")

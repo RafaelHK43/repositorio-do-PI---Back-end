@@ -8,7 +8,10 @@ import br.edu.senac.sistema_ac.dto.UsuarioRequestDTO;
 import br.edu.senac.sistema_ac.dto.UsuarioResponseDTO;
 import br.edu.senac.sistema_ac.exception.RecursoNaoEncontradoException;
 import br.edu.senac.sistema_ac.repository.CursoRepository;
+import br.edu.senac.sistema_ac.repository.SubmissaoRepository;
 import br.edu.senac.sistema_ac.repository.UsuarioRepository;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +26,7 @@ public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
     private final CursoRepository cursoRepository;
+    private final SubmissaoRepository submissaoRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Transactional(readOnly = true)
@@ -52,6 +56,18 @@ public class UsuarioService {
     public UsuarioResponseDTO buscarPorId(Long id) {
         Usuario usuario = usuarioRepository.findById(id)
             .orElseThrow(() -> new RecursoNaoEncontradoException("Usuario nao encontrado"));
+
+        return toDto(usuario);
+    }
+
+    @Transactional(readOnly = true)
+    public UsuarioResponseDTO buscarUsuarioLogado(Authentication authentication) {
+        if (authentication == null) {
+            throw new IllegalStateException("Usuario autenticado nao encontrado");
+        }
+
+        Usuario usuario = usuarioRepository.findWithCursosByEmail(authentication.getName())
+            .orElseThrow(() -> new IllegalStateException("Usuario autenticado nao encontrado"));
 
         return toDto(usuario);
     }
@@ -114,6 +130,48 @@ public class UsuarioService {
             .map(c -> new CursoResponseDTO(c.getId(), c.getNome(), c.getCargaHorariaMinima()))
             .collect(Collectors.toList());
 
-        return new UsuarioResponseDTO(usuario.getId(), usuario.getNome(), usuario.getEmail(), usuario.getPerfil(), cursos);
+        CursoResponseDTO cursoPrincipal = cursos.isEmpty() ? null : cursos.get(0);
+        List<br.edu.senac.sistema_ac.domain.entity.Submissao> submissoes =
+            usuario.getPerfil() == PerfilUsuario.ALUNO
+                ? submissaoRepository.findAllByAlunoIdOrderByDataSubmissaoDesc(usuario.getId())
+                : List.of();
+
+        long pendentes = submissoes.stream()
+            .filter(s -> s.getStatus() == br.edu.senac.sistema_ac.domain.enums.StatusSubmissao.PENDENTE)
+            .count();
+        long aprovadas = submissoes.stream()
+            .filter(s -> s.getStatus() == br.edu.senac.sistema_ac.domain.enums.StatusSubmissao.APROVADA)
+            .count();
+        long reprovadas = submissoes.stream()
+            .filter(s -> s.getStatus() == br.edu.senac.sistema_ac.domain.enums.StatusSubmissao.REPROVADA)
+            .count();
+        BigDecimal horasAprovadas = submissoes.stream()
+            .filter(s -> s.getStatus() == br.edu.senac.sistema_ac.domain.enums.StatusSubmissao.APROVADA && s.getHorasAprovadas() != null)
+            .map(br.edu.senac.sistema_ac.domain.entity.Submissao::getHorasAprovadas)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        Integer cargaHorariaMinima = cursoPrincipal != null ? cursoPrincipal.cargaHorariaMinima() : 0;
+        Double progressoPercentual = cargaHorariaMinima != null && cargaHorariaMinima > 0
+            ? horasAprovadas.multiply(BigDecimal.valueOf(100))
+                .divide(BigDecimal.valueOf(cargaHorariaMinima), 2, RoundingMode.HALF_UP)
+                .min(BigDecimal.valueOf(100))
+                .doubleValue()
+            : 0.0;
+
+        return new UsuarioResponseDTO(
+            usuario.getId(),
+            usuario.getNome(),
+            usuario.getEmail(),
+            usuario.getPerfil(),
+            cursos,
+            cursoPrincipal != null ? cursoPrincipal.id() : null,
+            cursoPrincipal != null ? cursoPrincipal.nome() : null,
+            submissoes.size(),
+            pendentes,
+            aprovadas,
+            reprovadas,
+            horasAprovadas,
+            cargaHorariaMinima,
+            progressoPercentual
+        );
     }
 }
