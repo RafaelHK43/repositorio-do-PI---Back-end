@@ -41,16 +41,24 @@ public class InitialDataConfig {
                         .cargaHorariaMinima(120)
                         .build()));
 
+                usuarioRepository.save(Usuario.builder()
+                    .nome("Super Admin")
+                    .email("admin@senac.br")
+                    .senha(passwordEncoder.encode("123456"))
+                    .perfil(PerfilUsuario.SUPER_ADMIN)
+                    .build());
+
                 Usuario coordenador = usuarioRepository.save(Usuario.builder()
                     .nome("Coordenador Geral")
-                    .email("coordenador@teste.com")
+                    .email("coordenador@senac.br")
                     .senha(passwordEncoder.encode("123456"))
                     .perfil(PerfilUsuario.COORDENADOR)
+                    .cursos(List.of(curso))
                     .build());
 
                 Usuario aluno = usuarioRepository.save(Usuario.builder()
-                    .nome("Gustavo Moura")
-                    .email("gustavobmoura3z9@gmail.com")
+                    .nome("Aluno Teste")
+                    .email("aluno@senac.br")
                     .senha(passwordEncoder.encode("123456"))
                     .perfil(PerfilUsuario.ALUNO)
                     .cursos(List.of(curso))

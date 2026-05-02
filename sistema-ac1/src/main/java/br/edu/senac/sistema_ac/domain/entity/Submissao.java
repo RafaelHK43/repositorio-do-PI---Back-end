@@ -61,6 +61,9 @@ public class Submissao {
     @Column(length = 20)
     private TipoArquivoComprovante tipoArquivoComprovante;
 
+    @Column(length = 2000)
+    private String resultadoOcr;
+
     @Column(length = 1000)
     private String observacaoCoordenacao;
 

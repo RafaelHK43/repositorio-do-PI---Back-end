@@ -36,7 +36,7 @@ public class SubmissaoService {
 
     @Transactional
     public Submissao criar(SubmissaoRequest request, MultipartFile arquivo) {
-        Usuario aluno = usuarioRepository.findById(request.studentId())
+        Usuario aluno = usuarioRepository.findById(request.alunoId())
             .orElseThrow(() -> new IllegalArgumentException("Aluno nao encontrado"));
         Curso curso = cursoService.buscarPorId(request.cursoId());
 
@@ -75,22 +75,15 @@ public class SubmissaoService {
             .certificadoUrl(caminhoArquivo)
             .nomeArquivoComprovante(arquivo.getOriginalFilename())
             .tipoArquivoComprovante(TipoArquivoComprovante.fromContentType(arquivo.getContentType()))
-            .observacaoCoordenacao(resultadoOcr)
+            .resultadoOcr(resultadoOcr)
             .build();
 
         Submissao salvo = submissaoRepository.save(submissao);
         
         // Enviar email para coordenadores
         try {
-            Long countCoords = usuarioRepository.countByPerfil(br.edu.senac.sistema_ac.domain.enums.PerfilUsuario.COORDENADOR);
-            if (countCoords > 0) {
-                // Simplificação: notifica coordenador genérico ou lista de coordenadores
-                // Aqui pegamos o primeiro coordenador como exemplo (ajuste conforme regra de negócio)
-                // Idealmente buscaríamos "findByPerfil", para este código vamos enviar para todos com perfil COORDENADOR
-                List<Usuario> coords = usuarioRepository.findAll().stream()
-                    .filter(u -> u.getPerfil() == br.edu.senac.sistema_ac.domain.enums.PerfilUsuario.COORDENADOR)
-                    .toList();
-                    
+            List<Usuario> coords = usuarioRepository.findAllByPerfil(br.edu.senac.sistema_ac.domain.enums.PerfilUsuario.COORDENADOR);
+            if (!coords.isEmpty()) {
                 for (Usuario coord : coords) {
                     String assunto = "Nova submissão recebida!";
                     String msg = String.format("O aluno %s submeteu uma nova atividade (%s). Acesse o painel para avaliar.", 

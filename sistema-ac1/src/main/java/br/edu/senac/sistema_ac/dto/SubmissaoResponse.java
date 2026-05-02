@@ -18,6 +18,7 @@ public record SubmissaoResponse(
     String certificadoUrl,
     String nomeArquivoComprovante,
     TipoArquivoComprovante tipoArquivoComprovante,
+    String resultadoOcr,
     String observacaoCoordenacao,
     LocalDateTime dataSubmissao
 ) {
@@ -35,6 +36,7 @@ public record SubmissaoResponse(
             buildCertificadoUrl(submissao.getCertificadoUrl()),
             submissao.getNomeArquivoComprovante(),
             submissao.getTipoArquivoComprovante(),
+            submissao.getResultadoOcr(),
             submissao.getObservacaoCoordenacao(),
             submissao.getDataSubmissao()
         );

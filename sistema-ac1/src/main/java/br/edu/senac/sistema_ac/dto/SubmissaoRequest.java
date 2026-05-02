@@ -8,8 +8,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public record SubmissaoRequest(
-    @NotNull(message = "studentId e obrigatorio")
-    Long studentId,
+    @NotNull(message = "alunoId e obrigatorio")
+    Long alunoId,
 
     @NotNull(message = "cursoId e obrigatorio")
     Long cursoId,

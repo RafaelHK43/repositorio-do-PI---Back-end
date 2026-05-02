@@ -10,7 +10,7 @@ public record DashboardResponseDTO(
     long submissoesAprovadas,
     long submissoesReprovadas,
     BigDecimal horasAprovadas,
-    List<MetricaCursoDTO> metricasPorCurso,
-    List<MetricaAreaDTO> metricasPorArea
+    List<MetricaCursoDTO> porCurso,
+    List<MetricaAreaDTO> porArea
 ) {
 }
