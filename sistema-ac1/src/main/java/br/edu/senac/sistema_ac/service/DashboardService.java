@@ -28,11 +28,11 @@ public class DashboardService {
     @Transactional(readOnly = true)
     public DashboardResponseDTO obterMetrics() {
         long totalAlunos = usuarioRepository.countByPerfil(PerfilUsuario.ALUNO);
-        long submissoesPendentes = submissaoRepository.countByStatus(StatusSubmissao.PENDENTE);
+        long pendentes = submissaoRepository.countByStatus(StatusSubmissao.PENDENTE);
         long submissoesAprovadas = submissaoRepository.countByStatus(StatusSubmissao.APROVADA);
         long submissoesReprovadas = submissaoRepository.countByStatus(StatusSubmissao.REPROVADA);
         BigDecimal horasAprovadas = submissaoRepository.somarHorasPorStatus(StatusSubmissao.APROVADA);
-        long totalSubmissoes = submissoesPendentes + submissoesAprovadas + submissoesReprovadas;
+        long totalSubmissoes = pendentes + submissoesAprovadas + submissoesReprovadas;
 
         List<Submissao> todas = submissaoRepository.findAllByOrderByDataSubmissaoDesc();
 
@@ -42,7 +42,7 @@ public class DashboardService {
         return new DashboardResponseDTO(
             totalAlunos,
             totalSubmissoes,
-            submissoesPendentes,
+            pendentes,
             submissoesAprovadas,
             submissoesReprovadas,
             horasAprovadas,

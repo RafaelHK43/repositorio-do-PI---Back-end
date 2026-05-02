@@ -2,6 +2,7 @@ package br.edu.senac.sistema_ac.service;
 
 import br.edu.senac.sistema_ac.domain.entity.Curso;
 import br.edu.senac.sistema_ac.domain.entity.Usuario;
+import br.edu.senac.sistema_ac.domain.enums.PerfilUsuario;
 import br.edu.senac.sistema_ac.dto.CursoResponseDTO;
 import br.edu.senac.sistema_ac.dto.UsuarioRequestDTO;
 import br.edu.senac.sistema_ac.dto.UsuarioResponseDTO;
@@ -11,6 +12,7 @@ import br.edu.senac.sistema_ac.repository.UsuarioRepository;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,7 +26,22 @@ public class UsuarioService {
     private final PasswordEncoder passwordEncoder;
 
     @Transactional(readOnly = true)
-    public List<UsuarioResponseDTO> listarTodos(br.edu.senac.sistema_ac.domain.enums.PerfilUsuario perfil, Long cursoId) {
+    public List<UsuarioResponseDTO> listarTodos(PerfilUsuario perfil, Long cursoId, Authentication authentication) {
+        if (authentication != null) {
+            Usuario usuarioLogado = usuarioRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new IllegalStateException("Usuario autenticado nao encontrado"));
+
+            if (usuarioLogado.getPerfil() == PerfilUsuario.COORDENADOR) {
+                List<Long> cursoIds = usuarioLogado.getCursos().stream()
+                    .map(Curso::getId)
+                    .toList();
+                return usuarioRepository.findAllByFiltrosECursos(perfil, cursoIds)
+                    .stream()
+                    .map(this::toDto)
+                    .collect(Collectors.toList());
+            }
+        }
+
         return usuarioRepository.findAllByFiltros(perfil, cursoId)
             .stream()
             .map(this::toDto)

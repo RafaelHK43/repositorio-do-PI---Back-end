@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @CrossOrigin(origins = "*")
@@ -35,7 +36,9 @@ public class AuthController {
         Usuario usuario = usuarioRepository.findByEmail(request.email())
             .orElseThrow(() -> new IllegalStateException("Usuario autenticado nao encontrado"));
 
-        System.out.println("[LOGIN DEBUG] Login bem-sucedido para: " + usuario.getEmail());
+        if (!usuario.getPerfil().equals(request.perfil())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Perfil informado nao corresponde ao cadastrado");
+        }
 
         return new AuthResponse(
             usuario.getNome(),

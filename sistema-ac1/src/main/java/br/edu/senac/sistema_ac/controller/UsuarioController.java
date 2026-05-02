@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import jakarta.validation.Valid;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.security.core.Authentication;
 
 @RestController
 @CrossOrigin(origins = "*")
@@ -31,8 +32,9 @@ public class UsuarioController {
     @GetMapping
     public ResponseEntity<List<UsuarioResponseDTO>> listar(
             @RequestParam(required = false) br.edu.senac.sistema_ac.domain.enums.PerfilUsuario perfil,
-            @RequestParam(required = false) Long cursoId) {
-        return ResponseEntity.ok(usuarioService.listarTodos(perfil, cursoId));
+            @RequestParam(required = false) Long cursoId,
+            Authentication authentication) {
+        return ResponseEntity.ok(usuarioService.listarTodos(perfil, cursoId, authentication));
     }
 
     @PostMapping

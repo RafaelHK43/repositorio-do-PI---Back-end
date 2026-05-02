@@ -17,6 +17,11 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
            "AND (:cursoId IS NULL OR c.id = :cursoId)")
     List<Usuario> findAllByFiltros(@Param("perfil") PerfilUsuario perfil, @Param("cursoId") Long cursoId);
 
+    @Query("SELECT DISTINCT u FROM Usuario u JOIN u.cursos c " +
+           "WHERE (:perfil IS NULL OR u.perfil = :perfil) " +
+           "AND c.id IN :cursoIds")
+    List<Usuario> findAllByFiltrosECursos(@Param("perfil") PerfilUsuario perfil, @Param("cursoIds") List<Long> cursoIds);
+
     boolean existsByCursosId(Long cursoId);
 
     long countByPerfil(PerfilUsuario perfil);

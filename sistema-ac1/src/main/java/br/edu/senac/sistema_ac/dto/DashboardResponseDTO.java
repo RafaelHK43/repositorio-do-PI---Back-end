@@ -6,7 +6,7 @@ import java.util.List;
 public record DashboardResponseDTO(
     long totalAlunos,
     long totalSubmissoes,
-    long submissoesPendentes,
+    long pendentes,
     long submissoesAprovadas,
     long submissoesReprovadas,
     BigDecimal horasAprovadas,

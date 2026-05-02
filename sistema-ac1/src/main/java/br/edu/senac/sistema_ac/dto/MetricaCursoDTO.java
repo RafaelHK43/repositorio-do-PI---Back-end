@@ -6,7 +6,7 @@ public record MetricaCursoDTO(
     Long cursoId,
     String cursoNome,
     long totalSubmissoes,
-    long submissoesPendentes,
+    long pendentes,
     long submissoesAprovadas,
     long submissoesReprovadas,
     BigDecimal horasAprovadas
