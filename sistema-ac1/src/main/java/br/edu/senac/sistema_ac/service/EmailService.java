@@ -20,15 +20,22 @@ public class EmailService {
     @Value("${spring.mail.username}")
     private String remetente;
 
+    @Value("${sgac.mail.enabled:false}")
+    private boolean mailEnabled;
+
     @Async
     public void enviarEmail(String destinatario, String assunto, String mensagem) {
+        if (!mailEnabled) {
+            logger.info("[EMAIL SIMULADO] Para: {} | Assunto: {} | Mensagem: {}",
+                    destinatario, assunto, mensagem);
+            return;
+        }
         try {
             SimpleMailMessage mail = new SimpleMailMessage();
             mail.setFrom(remetente);
             mail.setTo(destinatario);
             mail.setSubject(assunto);
             mail.setText(mensagem);
-
             mailSender.send(mail);
         } catch (Exception e) {
             logger.error("Falha ao enviar email para '{}': {}", destinatario, e.getMessage(), e);
