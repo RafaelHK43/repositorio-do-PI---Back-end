@@ -32,9 +32,9 @@ public class CursoController {
         return cursoService.criar(request);
     }
 
-    @GetMapping
-    public List<Curso> listar() {
-        return cursoService.listar();
+    @org.springframework.web.bind.annotation.GetMapping
+    public List<Curso> listar(org.springframework.security.core.Authentication authentication) {
+        return cursoService.listar(authentication);
     }
 
     @GetMapping("/{id}")

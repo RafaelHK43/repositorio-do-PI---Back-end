@@ -35,7 +35,7 @@ public class SecurityConfig {
                     .hasAnyRole("SUPER_ADMIN", "COORDENADOR")
                 .requestMatchers(HttpMethod.GET, "/api/cursos/**", "/api/regras/**")
                     .hasAnyRole("SUPER_ADMIN", "COORDENADOR", "ALUNO")
-                .requestMatchers(HttpMethod.POST, "/api/submissoes/**").hasRole("ALUNO")
+                .requestMatchers(HttpMethod.POST, "/api/submissoes/**").hasAnyRole("ALUNO", "SUPER_ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/submissoes/**").hasAnyRole("SUPER_ADMIN", "COORDENADOR")
                 .requestMatchers("/api/submissoes/**").hasAnyRole("SUPER_ADMIN", "COORDENADOR", "ALUNO")
                 .anyRequest().authenticated())

@@ -35,28 +35,69 @@ public class DashboardService {
 
     @Transactional(readOnly = true)
     public DashboardResponseDTO obterMetrics() {
-        long totalAlunos = usuarioRepository.countByPerfil(PerfilUsuario.ALUNO);
-        long pendentes = submissaoRepository.countByStatus(StatusSubmissao.PENDENTE);
-        long submissoesAprovadas = submissaoRepository.countByStatus(StatusSubmissao.APROVADA);
-        long submissoesReprovadas = submissaoRepository.countByStatus(StatusSubmissao.REPROVADA);
-        BigDecimal horasAprovadas = submissaoRepository.somarHorasPorStatus(StatusSubmissao.APROVADA);
-        long totalSubmissoes = pendentes + submissoesAprovadas + submissoesReprovadas;
+        String emailLogado = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
+        Usuario usuarioLogado = usuarioRepository.findByEmail(emailLogado)
+            .orElseThrow(() -> new IllegalStateException("Usuario autenticado nao encontrado"));
 
         List<Submissao> todas = submissaoRepository.findAllByOrderByDataSubmissaoDesc();
 
-        List<MetricaCursoDTO> metricasPorCurso = buildMetricasPorCurso(todas);
-        List<MetricaAreaDTO> metricasPorArea = buildMetricasPorArea(todas);
+        if (usuarioLogado.getPerfil() == PerfilUsuario.SUPER_ADMIN) {
+            long totalAlunos = usuarioRepository.countByPerfil(PerfilUsuario.ALUNO);
+            long pendentes = submissaoRepository.countByStatus(StatusSubmissao.PENDENTE);
+            long submissoesAprovadas = submissaoRepository.countByStatus(StatusSubmissao.APROVADA);
+            long submissoesReprovadas = submissaoRepository.countByStatus(StatusSubmissao.REPROVADA);
+            BigDecimal horasAprovadas = submissaoRepository.somarHorasPorStatus(StatusSubmissao.APROVADA);
+            long totalSubmissoes = pendentes + submissoesAprovadas + submissoesReprovadas;
 
-        return new DashboardResponseDTO(
-            totalAlunos,
-            totalSubmissoes,
-            pendentes,
-            submissoesAprovadas,
-            submissoesReprovadas,
-            horasAprovadas,
-            metricasPorCurso,
-            metricasPorArea
-        );
+            List<MetricaCursoDTO> metricasPorCurso = buildMetricasPorCurso(todas);
+            List<MetricaAreaDTO> metricasPorArea = buildMetricasPorArea(todas);
+
+            return new DashboardResponseDTO(
+                totalAlunos,
+                totalSubmissoes,
+                pendentes,
+                submissoesAprovadas,
+                submissoesReprovadas,
+                horasAprovadas,
+                metricasPorCurso,
+                metricasPorArea
+            );
+        }
+
+        if (usuarioLogado.getPerfil() == PerfilUsuario.COORDENADOR) {
+            List<Long> cursoIds = usuarioLogado.getCursos().stream().map(Curso::getId).toList();
+            List<Submissao> filtradas = todas.stream()
+                .filter(s -> s.getAtividadeComplementar() != null
+                    && s.getAtividadeComplementar().getCurso() != null
+                    && cursoIds.contains(s.getAtividadeComplementar().getCurso().getId()))
+                .toList();
+
+            long totalAlunos = usuarioRepository.findAllByFiltrosECursos(PerfilUsuario.ALUNO, cursoIds).size();
+            long pendentes = filtradas.stream().filter(s -> s.getStatus() == StatusSubmissao.PENDENTE).count();
+            long aprovadas = filtradas.stream().filter(s -> s.getStatus() == StatusSubmissao.APROVADA).count();
+            long reprovadas = filtradas.stream().filter(s -> s.getStatus() == StatusSubmissao.REPROVADA).count();
+            BigDecimal horasAprovadas = filtradas.stream()
+                .filter(s -> s.getStatus() == StatusSubmissao.APROVADA && s.getHorasAprovadas() != null)
+                .map(Submissao::getHorasAprovadas)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+            long totalSubmissoes = pendentes + aprovadas + reprovadas;
+
+            List<MetricaCursoDTO> metricasPorCurso = buildMetricasPorCurso(filtradas);
+            List<MetricaAreaDTO> metricasPorArea = buildMetricasPorArea(filtradas);
+
+            return new DashboardResponseDTO(
+                totalAlunos,
+                totalSubmissoes,
+                pendentes,
+                aprovadas,
+                reprovadas,
+                horasAprovadas,
+                metricasPorCurso,
+                metricasPorArea
+            );
+        }
+
+        throw new org.springframework.security.access.AccessDeniedException("Acesso negado");
     }
 
     private List<MetricaCursoDTO> buildMetricasPorCurso(List<Submissao> todas) {

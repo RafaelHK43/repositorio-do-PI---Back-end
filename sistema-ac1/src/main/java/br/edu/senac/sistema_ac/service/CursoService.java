@@ -10,6 +10,8 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.core.Authentication;
+import br.edu.senac.sistema_ac.domain.enums.PerfilUsuario;
 
 @Service
 @RequiredArgsConstructor
@@ -35,6 +37,20 @@ public class CursoService {
 
     @Transactional(readOnly = true)
     public List<Curso> listar() {
+        return cursoRepository.findAll();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Curso> listar(Authentication authentication) {
+        if (authentication == null) return cursoRepository.findAll();
+
+        var usuarioOpt = usuarioRepository.findByEmail(authentication.getName());
+        if (usuarioOpt.isEmpty()) return cursoRepository.findAll();
+
+        var usuario = usuarioOpt.get();
+        if (usuario.getPerfil() == PerfilUsuario.ALUNO) {
+            return cursoRepository.findByUsuarioId(usuario.getId());
+        }
         return cursoRepository.findAll();
     }
 
